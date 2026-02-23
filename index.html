@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Myntra-Style Shop</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #fafafa;
+}
+
+header {
+    background: #111;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 24px;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+.sidebar {
+    width: 240px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.products {
+    flex: 1;
+    display: grid;
+    grid-gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.product-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    position: relative;
+    transition: transform .2s;
+}
+
+.product-card:hover {
+    transform: scale(1.03);
+}
+
+.product-card img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+}
+
+.product-info {
+    padding: 10px;
+}
+
+.product-info h4 {
+    margin: 8px 0;
+    font-size: 17px;
+}
+
+.product-info p {
+    margin: 4px 0;
+    color: #555;
+    font-size: 15px;
+}
+
+.product-card button {
+    background: #ff3f6c;
+    color: white;
+    border: none;
+    width: 90%;
+    margin: 10px 5%;
+    padding: 8px;
+    font-size: 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.product-card button:hover {
+    background: #e62d5c;
+}
+
+.cart {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    width: 270px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.cart h3 {
+    margin-top: 0;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.checkout-btn {
+    width: 100%;
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+input, select {
+    width: 100%;
+    padding: 7px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    🛍️ MyStyle – Fashion Shopping
+</header>
+
+<div class="container">
+
+    <div class="sidebar">
+        <h4>Search</h4>
+        <input type="text" id="searchInput" placeholder="Search for fashion..." oninput="updateDisplay()">
+
+        <h4>Category</h4>
+        <select id="categoryFilter" onchange="updateDisplay()">
+            <option value="all">All</option>
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
+            <option value="Kids">Kids</option>
+        </select>
+
+        <h4>Sort By</h4>
+        <select id="sortBy" onchange="updateDisplay()">
+            <option value="">None</option>
+            <option value="priceasc">Price: Low → High</option>
+            <option value="pricedesc">Price: High → Low</option>
+            <option value="name">Name</option>
+        </select>
+    </div>
+
+    <div class="products" id="productGrid">
+        <!-- Products injected by JS -->
+    </div>
+</div>
+
+<div class="cart" id="cartBox">
+    <h3>🛒 Cart</h3>
+    <div id="cartItems"></div>
+    <button class="checkout-btn" onclick="checkout()">Checkout</button>
+</div>
+<div class="cart" style="top: 320px;">
+    <h3>❤️ Wishlist</h3>
+    <div id="wishlistItems"></div>
+</div>
+
+<div class="cart" style="top: 580px;">
+    <h3>📦 My Orders</h3>
+    <div id="orderItems"></div>
+</div>
+
+<script>
+let products = [
+    {
+        id: 1, name: "Graphic T-Shirt",
+        category: "Men",
+        price: 499,
+        img: "https://images.pexels.com/photos/428338/pexels-photo-428338.jpeg"
+    },
+    {
+        id: 2, name: "Women Summer Dress",
+        category: "Women",
+        price: 999,
+        img: "images/women-summer-dress.jpg"
+    },
+    {
+        id: 3, name: "Women Kurti",
+        category: "Women",
+        price: 799,
+        img: "images/kurti.jpg"
+    },
+    {
+        id: 4, name: "Men Denim Jeans",
+        category: "Men",
+        price: 1299,
+        img: "images/men-denim-jeans.jpeg"
+    },
+    {
+        id: 5, name: "Women Denim Jeans",
+        category: "Women",
+        price: 1399,
+        img: "images/women-denim-jeans.jpg"
+    },
+    {
+        id: 6, name: "Jacket for Both",
+        category: "Men & Women",
+        price: 1499,
+        img: "images/jacket-for-both.jpg"
+    },
+    {
+        id: 7, name: "Kids Footwear",
+        category: "Kids",
+        price: 599,
+        img: "images/kids-footwear.jpg"
+    }
+];
+
+let cart = [];
+let wishlist = [];
+let orders = [];
+
+function displayProducts(items) {
+    let grid = document.getElementById("productGrid");
+    grid.innerHTML = "";
+    items.forEach(p => {
+        grid.innerHTML += `
+        <div class="product-card">
+            <img src="${p.img}" alt="${p.name}">
+            <div class="product-info">
+                <h4>${p.name}</h4>
+                <p>₹ ${p.price}</p>
+                <button onclick="addToCart(${p.id})">Add to Cart</button>
+                <button onclick="addToWishlist(${p.id})" style="background:#ff9800;margin-top:5px;">❤️ Wishlist</button>
+            </div>
+        </div>
+        `;
+    });
+}
+
+function updateDisplay() {
+    let search = document.getElementById("searchInput").value.toLowerCase();
+    let category = document.getElementById("categoryFilter").value;
+    let sortBy = document.getElementById("sortBy").value;
+
+    let filtered = products.filter(p => {
+        return (p.name.toLowerCase().includes(search)) &&
+               (category === "all" || p.category === category);
+    });
+
+    if (sortBy === "priceasc") filtered.sort((a,b) => a.price - b.price);
+    if (sortBy === "pricedesc") filtered.sort((a,b) => b.price - a.price);
+    if (sortBy === "name") filtered.sort((a,b) => a.name.localeCompare(b.name));
+
+    displayProducts(filtered);
+}
+
+function addToCart(id) {
+    let item = products.find(p => p.id === id);
+    cart.push(item);
+    updateCart();
+}
+
+function updateCart() {
+    let cartDiv = document.getElementById("cartItems");
+    cartDiv.innerHTML = "";
+    cart.forEach((c,i) => {
+        cartDiv.innerHTML += `<div class="cart-item">
+            ${c.name} - ₹${c.price}
+        </div>`;
+    });
+}
+function addToWishlist(id) {
+    let item = products.find(p => p.id === id);
+    if (!wishlist.includes(item)) {
+        wishlist.push(item);
+        alert("Added to Wishlist ❤️");
+        updateWishlist();
+    }
+}
+
+function updateWishlist() {
+    let wishlistDiv = document.getElementById("wishlistItems");
+    wishlistDiv.innerHTML = "";
+    wishlist.forEach((w, i) => {
+        wishlistDiv.innerHTML += `
+        <div class="cart-item">
+            ${w.name} - ₹${w.price}
+            <button onclick="removeFromWishlist(${i})" 
+            style="background:red;color:white;border:none;padding:2px 5px;border-radius:4px;">X</button>
+        </div>`;
+    });
+}
+
+function removeFromWishlist(index) {
+    wishlist.splice(index, 1);
+    updateWishlist();
+}
+
+function checkout() {
+    if(cart.length === 0){
+        alert("Cart is empty!");
+        return;
+    }
+
+    let total = cart.reduce((a,b)=> a + b.price, 0);
+
+    orders.push({
+        items: [...cart],
+        total: total,
+        date: new Date().toLocaleString()
+    });
+
+    alert("Order Placed Successfully! 📦\nTotal: ₹" + total);
+
+    cart = [];
+    updateCart();
+    updateOrders();
+}
+        
+updateDisplay();
+function updateOrders() {
+    let orderDiv = document.getElementById("orderItems");
+    orderDiv.innerHTML = "";
+
+    orders.forEach(o => {
+        orderDiv.innerHTML += `
+        <div style="margin-bottom:10px;border-bottom:1px solid #ccc;padding-bottom:5px;">
+            <strong>Date:</strong> ${o.date}<br>
+            <strong>Total:</strong> ₹${o.total}
+        </div>`;
+    });
+}
+</script>
+
+</body>
+</html>
